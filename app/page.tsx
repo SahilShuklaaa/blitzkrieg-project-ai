@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { getAISuggestion } from "./ai";
 
@@ -9,6 +10,9 @@ export default function Home() {
   const [clicksA, setClicksA] = useState(0);
   const [clicksB, setClicksB] = useState(0);
   const [improvementType, setImprovementType] = useState("none");
+
+  const [aiResponse, setAiResponse] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const savedA = localStorage.getItem("clicksA");
@@ -31,17 +35,42 @@ export default function Home() {
     }
   }, []);
 
-useEffect(() => {
-  localStorage.setItem("clicksA", String(clicksA));
-  localStorage.setItem("clicksB", String(clicksB));
-}, [clicksA, clicksB]);
+  useEffect(() => {
+    localStorage.setItem("clicksA", String(clicksA));
+    localStorage.setItem("clicksB", String(clicksB));
+  }, [clicksA, clicksB]);
 
   const handleClick = () => {
     if (version === "A") {
-      setClicksA(clicksA + 1);
+      setClicksA((prev) => prev + 1);
     } else {
-      setClicksB(clicksB + 1);
+      setClicksB((prev) => prev + 1);
     }
+  };
+
+  const getAIInsights = async () => {
+    setLoading(true);
+    setAiResponse("");
+
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          clicksA,
+          clicksB
+        })
+      });
+
+      const data = await res.json();
+      setAiResponse(data.text || "No AI response");
+    } catch (error) {
+      setAiResponse("AI request failed");
+    }
+
+    setLoading(false);
   };
 
   const improvement =
@@ -51,8 +80,7 @@ useEffect(() => {
 
   return (
     <div style={{ fontFamily: "Arial, sans-serif" }}>
-
-      {/* HERO IMAGE + OVERLAY */}
+      {/* HERO IMAGE */}
       <div style={{ position: "relative" }}>
         <img
           src="/lemonade1.png"
@@ -64,7 +92,7 @@ useEffect(() => {
           }}
         />
 
-        {/* OVERLAY */}
+        {/* HERO OVERLAY */}
         <div
           style={{
             position: "absolute",
@@ -81,10 +109,10 @@ useEffect(() => {
         >
           <h1>🍋 AI Lemonade Shop</h1>
 
-          {/* VERSION A */}
           {version === "A" ? (
             <>
               <p style={{ fontSize: "22px" }}>$2</p>
+
               <button
                 onClick={handleClick}
                 style={{
@@ -99,18 +127,26 @@ useEffect(() => {
             </>
           ) : (
             <>
-              {/* VERSION B DYNAMIC */}
               {improvementType === "discount" && (
-                <>
-                  <p>
-                    <span style={{ textDecoration: "line-through", color: "red" }}>
-                      $3
-                    </span>{" "}
-                    <span style={{ color: "#4ade80", fontWeight: "bold", fontSize: "22px" }}>
-                      $1.5
-                    </span>
-                  </p>
-                </>
+                <p>
+                  <span
+                    style={{
+                      textDecoration: "line-through",
+                      color: "red"
+                    }}
+                  >
+                    $3
+                  </span>{" "}
+                  <span
+                    style={{
+                      color: "#4ade80",
+                      fontWeight: "bold",
+                      fontSize: "22px"
+                    }}
+                  >
+                    $1.5
+                  </span>
+                </p>
               )}
 
               {improvementType === "urgency" && (
@@ -138,7 +174,8 @@ useEffect(() => {
                   backgroundColor:
                     improvementType === "color" ? "#22c55e" : "#3b82f6",
                   color: "white",
-                  fontSize: improvementType === "size" ? "22px" : "18px",
+                  fontSize:
+                    improvementType === "size" ? "22px" : "18px",
                   padding: "14px 28px",
                   borderRadius: "8px",
                   border: "none",
@@ -152,7 +189,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* A/B COMPARISON */}
+      {/* A/B TABLE */}
       <div style={{ padding: "30px" }}>
         <h2 style={{ textAlign: "center" }}>📊 A/B Comparison</h2>
 
@@ -178,11 +215,13 @@ useEffect(() => {
               <td>{clicksA}</td>
               <td>{clicksB}</td>
             </tr>
+
             <tr>
               <td>Strategy</td>
               <td>Static Pricing</td>
               <td>AI Dynamic Optimization</td>
             </tr>
+
             <tr>
               <td>Improvement</td>
               <td>-</td>
@@ -191,7 +230,41 @@ useEffect(() => {
           </tbody>
         </table>
 
-        {/* AI INSIGHTS */}
+        {/* REAL AI BUTTON */}
+        <div style={{ textAlign: "center", marginTop: "30px" }}>
+          <button
+            onClick={getAIInsights}
+            style={{
+              backgroundColor: "#111827",
+              color: "white",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            {loading ? "Analyzing..." : "Generate Real AI Insights"}
+          </button>
+        </div>
+
+        {/* REAL AI RESPONSE */}
+        {aiResponse && (
+          <div
+            style={{
+              marginTop: "30px",
+              textAlign: "center",
+              background: "#f3f4f6",
+              padding: "20px",
+              borderRadius: "10px",
+              color: "black"
+            }}
+          >
+            <h2>🤖 Real AI Insights</h2>
+            <p style={{ whiteSpace: "pre-line" }}>{aiResponse}</p>
+          </div>
+        )}
+
+        {/* EXISTING AI INSIGHTS */}
         <div style={{ marginTop: "40px", textAlign: "center" }}>
           <h2>🤖 AI Insights</h2>
           <p>{ai.problem}</p>
@@ -204,7 +277,13 @@ useEffect(() => {
         </div>
 
         {/* TAGLINE */}
-        <div style={{ marginTop: "40px", textAlign: "center", color: "gray" }}>
+        <div
+          style={{
+            marginTop: "40px",
+            textAlign: "center",
+            color: "gray"
+          }}
+        >
           Real-time AI optimizing pricing & UI
         </div>
       </div>
