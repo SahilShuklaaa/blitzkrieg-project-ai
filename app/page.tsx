@@ -31,10 +31,10 @@ export default function Home() {
     }
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("clicksA", clicksA);
-    localStorage.setItem("clicksB", clicksB);
-  }, [clicksA, clicksB]);
+useEffect(() => {
+  localStorage.setItem("clicksA", String(clicksA));
+  localStorage.setItem("clicksB", String(clicksB));
+}, [clicksA, clicksB]);
 
   const handleClick = () => {
     if (version === "A") {
